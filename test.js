@@ -21,17 +21,39 @@ var messageOptions = {
     })
 };
 
-const mongoClient = new MongoClient(new Server("localhost", 27017), {native_parser: true});
 
-mongoClient.connect(url, function(err, db){
-		assert.equal(null, err);
-	  	console.log("Connected correctly to server");
-	  	var collection = db.collection('users');
-	  	bot.onText(/\/start/, (msg, match) => {
-		    const chatId = msg.hasOwnProperty('chat') ? msg.chat.id : msg.from.id;
+// const MongoClient = require("mongodb").MongoClient;
 
-		    bot.sendMessage(chatId, 'Здравствуй, новый пользователь!', messageOptions);
-		});
+// const url = "mongodb://localhost:27017/";
+// const mongoClient = new MongoClient(url, { useNewUrlParser: true });
+// mongoClient.connect(function(err, client){
+
+// 	const db = client.db("Bot_DB");
+// 	const collection = db.collection("users");
+// 	let user = {name: "Eduard", age: 16};
+// 	collection.insertOne(user, function(err,result){
+
+// 		if(err){
+//         return console.log(err);
+//     }
+//     console.log(result.ops);
+//     client.close();
+// 	});
+// });
+
+
+
+const mongoClient = new MongoClient(url, { useNewUrlParser: true });
+
+mongoClient.connect(function(err, client){
+	const db = client.db("Bot_DB");
+	assert.equal(null, err);
+	console.log("Connected correctly to server");
+	var collection = db.collection('users');
+	bot.onText(/\/start/, (msg, match) => {
+	const chatId = msg.hasOwnProperty('chat') ? msg.chat.id : msg.from.id;
+	bot.sendMessage(chatId, 'Здравствуй, новый пользователь!', messageOptions);
+	});
 
 		bot.on('callback_query',  (msg, match) => {
 		    const chatId = msg.hasOwnProperty('chat') ? msg.chat.id : msg.from.id;
@@ -42,13 +64,17 @@ mongoClient.connect(url, function(err, db){
 		            bot.sendMessage(chatId, `${name}, введите свой возраст:`);
 		            bot.onText(/(\d\d|\d)/, (msg, match) => {
 		                let age = msg.text;
-		                collection.insertOne( { name: name, age: eval(age) } ); 
+		                collection.insertOne( { name: name, age: eval(age) }, async function(err, result){
+
+		                	if (err) {
+		                		return console.log(err);
+		                	}
+		                	console.log(result.ops);
+		                	await client.close();
+		                }); 
 		                bot.sendMessage(chatId, 'Новый пользователь добавлен!');
 		            })
 		        });
 		    }
 		});
-	 	var results = collection.find({ age: { $gt: 5 } });
-	 	console.log(results);
-	    db.close();
 	});
