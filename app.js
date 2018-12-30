@@ -1,8 +1,26 @@
 process.env.NTBA_FIX_319 = 1;
-var TelegramBot=require('node-telegram-bot-api');
+var TelegramBot = require('node-telegram-bot-api');
+var mongoose = require('mongoose');
+var btns = require('./btns.js');
+var mlab_url = 'mongodb://vargroozzz:2009bomh@ds017231.mlab.com:17231/tg_bot_data';
+mongoose.connect(mlab_url);
 const token='762533086:AAHfI2Ffdp4DGQwkKE90GjbaY3nO2spRaMs';
-const bot = new TelegramBot(token, {polling:true});
+var Schema = mongoose.Schema;
+var UserSchema = new Schema({
+    telegramId: String
+});
+var User = mongoose.model('user', UserSchema);
 
+var MessageSchema = new Schema({
+    title: String,
+    text: String
+});
+var Message = mongoose.model('message', MessageSchema);
+
+
+
+
+const bot = new TelegramBot(token, {polling:true});
 var messageOptions = {
     parse_mode: "HTML",
     disable_web_page_preview: false,
@@ -12,22 +30,28 @@ var messageOptions = {
             callback_data: 'reg'
         }]]
     })
-}
+};
 bot.onText(/\/start/, (msg, match) => {
     const chatId = msg.hasOwnProperty('chat') ? msg.chat.id : msg.from.id;
 
     bot.sendMessage(chatId, 'Здравствуй, новый пользователь!', messageOptions);
-})
+});
 
-bot.on('callback_query',  function(msg) {
+bot.on('callback_query',  (msg, match) => {
     const chatId = msg.hasOwnProperty('chat') ? msg.chat.id : msg.from.id;
-    if (message.data === 'reg') {
+    if (msg.data === 'reg') {
         bot.sendMessage(chatId, 'Введите имя:');
-        bot.onText(/[A-Z]*/I, function (msg) {
+        bot.onText(/([A-Z]|[А-Я])+/, (msg, match) => {
 
-            const resp = match[0];
+            const resp = msg.text;
+
             
-            bot.sendMessage(chatId, 'Введите возраст:');
+            bot.sendMessage(chatId, `${resp}, введите свой возраст:`);
+            bot.onText(/\d\d/, (msg, match) => {
+                let age = msg.text;
+                bot.sendMessage(chatId, `Ваш возраст - ${age} лет`);
+            })
+
 
         });
     }
